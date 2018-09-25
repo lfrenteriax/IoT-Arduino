@@ -32,7 +32,7 @@ if __name__ == "__main__":
     tornado.ioloop.IOLoop.instance().start()
 '''
 #!/usr/bin/python
-from BaseHTTPServer import BaseHTTPRequestHandler,HTTPServer
+from http.server import BaseHTTPRequestHandler,HTTPServer
 from os import curdir, sep
 import cgi
 import thread
