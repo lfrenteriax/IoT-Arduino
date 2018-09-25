@@ -55,9 +55,9 @@ class myHandler(BaseHTTPRequestHandler):
 		if "?" in self.path:
 			data=dict(urlparse.parse_qsl(self.path.split("?")[1], True))
 			for key,value in dict(urlparse.parse_qsl(self.path.split("?")[1], True)).items():
-				print key + " = " + value
-			print 'data',data
-			print 'mydata', mydata
+				print (key + " = " + value)
+			print ('data',data)
+			print ('mydata', mydata)
 			myTime=strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
 			mydata['time']=myTime
 			mydata['sensorValue']=data['sensorValue']
@@ -88,11 +88,11 @@ class myHandler(BaseHTTPRequestHandler):
 			})
 
 			if (form["cmd"].value=="stop blinking"):
-				print "Stop blinking"
+				print ("Stop blinking")
 				blink=False
 			else:
 				blink=True
-				print "Start blinking"
+				print ("Start blinking")
 
 			#Redirect the browser on the main page 
 			self.send_response(302)
@@ -107,13 +107,13 @@ def WebServerThread():
 		#Create a web server and define the handler to manage the
 		#incoming request
 		server = HTTPServer(('0.0.0.0', PORT_NUMBER), myHandler)
-		print 'Started httpserver on port ' , PORT_NUMBER
+		print ('Started httpserver on port ' , PORT_NUMBER)
 		
 		#Wait forever for incoming htto requests
 		server.serve_forever()
 
 	except KeyboardInterrupt:
-		print '^C received, shutting down the web server'
+		print ('^C received, shutting down the web server')
 		server.socket.close()
 
 if __name__ == "__main__":
