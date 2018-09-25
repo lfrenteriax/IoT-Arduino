@@ -35,8 +35,7 @@ if __name__ == "__main__":
 from http.server import BaseHTTPRequestHandler,HTTPServer
 from os import curdir, sep
 import cgi
-import thread
-import threading
+from threading import Thread
 import time
 import os
 import urlparse
