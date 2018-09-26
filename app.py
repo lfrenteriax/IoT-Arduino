@@ -1,130 +1,65 @@
 # -*- coding: utf-8 -*-
-'''
-from flask import Flask
-app = Flask(__name__)
 import os
-@app.route("/")
-def hello():
-    return "Hello leo!"
-
-if __name__ == "__main__":
-    port = int(os.environ.get('PORT',5000))
-    app.run(host='0.0.0.0', port=port)
-'''
-'''
-from tornado import websocket
-import tornado.ioloop
-
-class EchoWebSocket(websocket.WebSocketHandler):
-    def open(self):
-        print "Websocket Opened"
-
-    def on_message(self, message):
-        self.write_message(u"You said: %s" % message)
-
-    def on_close(self):
-        print "Websocket closed"
-
-application = tornado.web.Application([(r"/", EchoWebSocket),])
-
-if __name__ == "__main__":
-    application.listen(9000)
-    tornado.ioloop.IOLoop.instance().start()
-'''
-#!/usr/bin/python
-from http.server import BaseHTTPRequestHandler,HTTPServer
-from os import curdir, sep
-import cgi
-from threading import Thread
+port = int(os.environ.get("PORT", 5000))
+from urllib.parse import urlparse
+from urllib.parse import parse_qs
 import time
-import os
-import urlparse
-from time import gmtime, strftime
+from http.server import BaseHTTPRequestHandler, HTTPServer
 
-blink = True
+HOST_NAME = '0.0.0.0'
+PORT_NUMBER = port
+
 mydata={'sensorValue':'none','time':'none'}
+class MyHandler(BaseHTTPRequestHandler):
+    def do_HEAD(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html')
+        self.end_headers()
 
-#This class will handles any incoming request from
-#the browser 
-class myHandler(BaseHTTPRequestHandler):
-	
-	#Handler for the GET requests
-	def do_GET(self):
-		self.send_response(200)
-		if "?" in self.path:
-			data=dict(urlparse.parse_qsl(self.path.split("?")[1], True))
-			for key,value in dict(urlparse.parse_qsl(self.path.split("?")[1], True)).items():
-				print (key + " = " + value)
-			print ('data',data)
-			print ('mydata', mydata)
-			myTime=strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
-			mydata['time']=myTime
-			mydata['sensorValue']=data['sensorValue']
-		self.send_response(200)
-		self.send_header("Content-type", "text/html")
-		self.end_headers()
-		self.wfile.write('<html><head><title>IoT server.</title><meta http-equiv="refresh" content="5" /></head>')
-		try:
-			self.wfile.write("<body><p>Sensor value at  "+mydata['time']+" >>>>> "+ mydata["sensorValue"]+"</p>")
-		except:
-		   self.wfile.write("<body><p>Sensor value= none</p>")
-		# If someone went to "http://something.somewhere.net/foo/bar/",
-		# then s.path equals "/foo/bar/".
-		#self.wfile.write("<p>You accessed path: %s</p>" % self.path)
-		self.wfile.write("</body></html>")
+    def do_GET(self):
+        paths = {
+            '/foo': {'status': 200},
+            '/bar': {'status': 302},
+            '/baz': {'status': 404},
+            '/qux': {'status': 500}
+        }
+        if "?" in self.path:
+            data=dict(parse_qs(self.path.split("?")[1], True))
+            print ('data',data)
+            print ('mydata', mydata)
+            myTime=time.asctime()
+            mydata['time']=myTime
+            mydata['sensorValue']=data['sensorValue']
 
-	#Handler for the POST requests
-	def do_POST(self):
-		global blink
+        if self.path in paths:
+            self.respond(paths[self.path])
+        else:
+            self.respond({'status': 500})
 
-		#if self.path=="/blink":
-		if True:
-			form = cgi.FieldStorage(
-				fp=self.rfile, 
-				headers=self.headers,
-				environ={'REQUEST_METHOD':'POST',
-		                 'CONTENT_TYPE':self.headers['Content-Type'],
-			})
+    def handle_http(self, status_code, path):
+        self.send_response(status_code)
+        self.send_header('Content-type', 'text/html')
+        self.end_headers()
+        content = '''
+        <html><head><title>Title goes here.</title></head>
+        <body><p>This is a test.</p>
+        <p>You accessed path: {}</p>
+        <p>Sensor value: {}</p>
+        </body></html>
+        '''.format(path,mydata['sensorValue'])
+        return bytes(content, 'UTF-8')
 
-			if (form["cmd"].value=="stop blinking"):
-				print ("Stop blinking")
-				blink=False
-			else:
-				blink=True
-				print ("Start blinking")
+    def respond(self, opts):
+        response = self.handle_http(opts['status'], self.path)
+        self.wfile.write(response)
 
-			#Redirect the browser on the main page 
-			self.send_response(302)
-			self.send_header('Location','/')
-			self.end_headers()
-
-			return			
-			
-#This is a thread that runs the web server 
-def WebServerThread():			
-	try:
-		#Create a web server and define the handler to manage the
-		#incoming request
-		server = HTTPServer(('0.0.0.0', PORT_NUMBER), myHandler)
-		print ('Started httpserver on port ' , PORT_NUMBER)
-		
-		#Wait forever for incoming htto requests
-		server.serve_forever()
-
-	except KeyboardInterrupt:
-		print ('^C received, shutting down the web server')
-		server.socket.close()
-
-if __name__ == "__main__":
-	port = int(os.environ.get('PORT',5000))
-	PORT_NUMBER = port
-
-	# Runs the web server thread
-	thread.start_new_thread(WebServerThread,())
-
-	# Use the L1 led on Daisy11 module
-	#ledL1=ablib.Daisy11("D2","L1")
-
-	#Forever loop
-	while True:
-		pass # Check the blink flag
+if __name__ == '__main__':
+    server_class = HTTPServer
+    httpd = server_class((HOST_NAME, PORT_NUMBER), MyHandler)
+    print(time.asctime(), 'Server Starts - %s:%s' % (HOST_NAME, PORT_NUMBER))
+    try:
+        httpd.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    httpd.server_close()
+    print(time.asctime(), 'Server Stops - %s:%s' % (HOST_NAME, PORT_NUMBER))
